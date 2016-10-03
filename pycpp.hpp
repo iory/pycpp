@@ -79,7 +79,7 @@ std::string hex(From from) {
     std::stringstream ss;
     ss << std::hex << from;
     ss >> ret;
-    return ret;
+    return std::string("0x") + ret;
 }
 
 template <class From>
@@ -88,7 +88,56 @@ std::string oct(From from) {
     std::stringstream ss;
     ss << std::oct << from;
     ss >> ret;
-    return ret;
+    return std::string("0") + ret;
+}
+
+// check is_iterable
+// http://ideone.com/ExTsEO
+namespace detail
+{
+// To allow ADL with custom begin/end
+using std::begin;
+using std::end;
+
+template <typename T>
+auto is_iterable_impl(int)
+    -> decltype (
+                 begin(std::declval<T&>()) != end(std::declval<T&>()), // begin/end and operator !=
+                 ++std::declval<decltype(begin(std::declval<T&>()))&>(), // operator ++
+                 *begin(std::declval<T&>()), // operator*
+                 std::true_type{});
+
+template <typename T>
+std::false_type is_iterable_impl(...);
+
+}
+
+template <typename T>
+using is_iterable = decltype(detail::is_iterable_impl<T>(0));
+
+template <class From>
+bool all(From from) {
+    if(is_iterable<From>::value) {
+        for(auto value : from) {
+            if(!value) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+template <class From>
+bool any(From from) {
+    if(is_iterable<From>::value) {
+        for(auto value : from) {
+            if(value) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 } // end of pycpp namespace
